@@ -23,13 +23,49 @@ const server = http.createServer((req, res) => {
 	req.on('end', () => {
 		buffer += decoder.end();
 
-		res.end('Hello World!\n');
+		const choosenHandler = typeof(router[trimmedPath]) !== 'undefined' ? router[trimmedPath] : handlers.notFound;
 
-		console.log(`Path: ${trimmedPath}; Method: ${method}; Query string object:`, queryStringObject);
-		console.table(headers);
-		console.log('Payload:', buffer);
+		const data = {
+			trimmedPath,
+			queryStringObject,
+			method,
+			headers,
+			payload: buffer
+		};
+
+		choosenHandler(data, (statusCode, payload) => {
+			statusCode = typeof(statusCode) !== 'undefined' ? statusCode : 200;
+
+			payload = typeof(payload) !== 'undefined' ? payload : {};
+
+			const payloadString = JSON.stringify(payload);
+
+			res.setHeader('Content-Type', 'appliation/json');
+			res.statusCode = statusCode;
+			res.end(payloadString);
+		});
+
+
+		res.end('Hello World!');
 	});
 
 });
 
-server.listen(3000, () => console.log('The server is listening on port 3000'))
+server.listen(3000, () => console.log('The server is listening on port 3000'));
+
+const handlers = {};
+
+handlers.sample = function (data, callback) {
+	callback(200, {
+		name: 'Robo',
+		duty: 'stream'
+	});
+}
+
+handlers.notFound = function (data, callback) {
+	callback(400);
+}
+
+const router = {
+	sample: handlers.sample
+}
