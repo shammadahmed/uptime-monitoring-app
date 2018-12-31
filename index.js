@@ -1,5 +1,6 @@
 const http = require('http');
 const url = require('url');
+const { StringDecoder } = require('string_decoder');
 
 const server = http.createServer((req, res) => {
 
@@ -14,10 +15,21 @@ const server = http.createServer((req, res) => {
 
 	const headers = req.headers;
 
-	res.end('Hello World!\n');
+	const decoder = new StringDecoder('utf8')
+	let buffer = '';
 
-	console.log(`Path: ${trimmedPath}; Method: ${method}; Query string object:`, queryStringObject);
-	console.dir(headers);
+	req.on('data', data => buffer += decoder.write(data));
+
+	req.on('end', () => {
+		buffer += decoder.end();
+
+		res.end('Hello World!\n');
+
+		console.log(`Path: ${trimmedPath}; Method: ${method}; Query string object:`, queryStringObject);
+		console.table(headers);
+		console.log('Payload:', buffer);
+	});
+
 });
 
 server.listen(3000, () => console.log('The server is listening on port 3000'))
